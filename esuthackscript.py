@@ -119,7 +119,6 @@ def check_credentials(input_file, output_file, chromedriver_path):
         'Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
         'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'])
 
-    # Open the output file once
     with open(output_file, 'w', newline='') as csvfile:
         valid_accounts_df.to_csv(csvfile, index=False)  # Write the header initially
 
@@ -132,7 +131,6 @@ def check_credentials(input_file, output_file, chromedriver_path):
             if profile_info is not None:
                 profile_info_df = pd.DataFrame([profile_info])
                 profile_info_df.to_csv(csvfile, header=False, index=False)  # Append data
-                csvfile.flush()  # Flush after each write to force it to disk
                 print(f"Saved profile info for {username}")
 
     print(f"Results saved to {output_file}")
