@@ -134,11 +134,4 @@ def check_credentials(input_file, output_file, chromedriver_path):
     print(f"Results saved to {output_file}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Login and fetch user profile data.")
-    parser.add_argument('--input', type=str, required=True, help="Path to input Excel file containing user credentials.")
-    parser.add_argument('--output', type=str, required=True, help="Path to save the output CSV file.")
-    parser.add_argument('--chromedriver', type=str, required=True, help="Path to the ChromeDriver executable.")
-
-    args = parser.parse_args()
-
-    check_credentials(args.input, args.output, args.chromedriver)
+    check_credentials(input_file, output_file, chromedriver_path)
