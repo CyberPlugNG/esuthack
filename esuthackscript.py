@@ -120,17 +120,23 @@ def check_credentials(input_file, output_file, chromedriver_path):
         'Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
         'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'])
 
-    for index, row in accounts_df.iterrows():
-        username = row['username']
-        password = row['password']
+    # Open the output file to append
+    with open(output_file, 'w', newline='') as csvfile:
+        valid_accounts_df.to_csv(csvfile, index=False)  # Write header initially
 
-        profile_info = login_and_get_profile_info(username, password, chromedriver_path)
+        for index, row in accounts_df.iterrows():
+            username = row['username']
+            password = row['password']
 
-        if profile_info is not None:
-            profile_info_df = pd.DataFrame([profile_info])
-            valid_accounts_df = pd.concat([valid_accounts_df, profile_info_df], ignore_index=True)
+            profile_info = login_and_get_profile_info(username, password, chromedriver_path)
 
-    valid_accounts_df.to_csv(output_file, index=False)
+            if profile_info is not None:
+                profile_info_df = pd.DataFrame([profile_info])
+                
+                # Append the valid profile info to the CSV file immediately
+                profile_info_df.to_csv(csvfile, header=False, index=False)
+                print(f"Saved profile info for {username}")
+
     print(f"Results saved to {output_file}")
 
 if __name__ == "__main__":
