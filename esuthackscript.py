@@ -13,7 +13,6 @@ def login_and_get_profile_info(username, password, chromedriver_path):
     os.environ['PATH'] += os.pathsep + chromedriver_path
 
     options = Options()
-    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
 
