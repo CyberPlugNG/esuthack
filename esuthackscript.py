@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -115,13 +116,16 @@ def login_and_get_profile_info(username, password, chromedriver_path):
 
 def check_credentials(input_file, output_file, chromedriver_path):
     accounts_df = pd.read_excel(input_file)
-    valid_accounts_df = pd.DataFrame(columns=[
-        'Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
-        'Department', 'Email', 'DateOfBirth', 'InvoiceNumber'])
+    
+    # Open CSV file in append mode
+    with open(output_file, 'a', newline='') as csvfile:
+        fieldnames = ['Username', 'Password', 'Surname', 'Firstname', 'Middlename', 'Phone', 'MatricNumber', 
+                      'Department', 'Email', 'DateOfBirth', 'InvoiceNumber']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-    # Open the output file once
-    with open(output_file, 'w', newline='') as csvfile:
-        valid_accounts_df.to_csv(csvfile, index=False)  # Write the header initially
+        # Write the header only if the file is empty
+        if csvfile.tell() == 0:
+            writer.writeheader()
 
         for index, row in accounts_df.iterrows():
             username = row['username']
@@ -130,9 +134,8 @@ def check_credentials(input_file, output_file, chromedriver_path):
             profile_info = login_and_get_profile_info(username, password, chromedriver_path)
 
             if profile_info is not None:
-                profile_info_df = pd.DataFrame([profile_info])
-                profile_info_df.to_csv(csvfile, header=False, index=False)  # Append data
-                csvfile.flush()  # Flush after each write to force it to disk
+                writer.writerow(profile_info)  # Write row immediately
+                csvfile.flush()  # Force the write to disk
                 print(f"Saved profile info for {username}")
 
     print(f"Results saved to {output_file}")
